@@ -7,34 +7,47 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"gitlab.engdb.com.br/apigin/domain/entities"
+	"gitlab.engdb.com.br/apigin/interfaces"
 )
 
-func GetUser(ctx context.Context) ([]entities.User, int, error) {
-	db, err := sql.Open("mysql", "root"+":"+""+"@tcp(127.0.0.1:3306)/"+"apigin")
+type mysqlRepo struct {
+	DB *sql.DB
+}
+
+// NewMysqlAuthorRepository will create an implementation of author.Repository
+func NewMysqlUserRepository(db *sql.DB) interfaces.UserRepo {
+	return &mysqlRepo{
+		DB: db,
+	}
+}
+
+func (m *mysqlRepo) GetUser(ctx context.Context) ([]entities.User, int, error) {
+
+	query := "SELECT * FROM users"
+
+	stmt, err := m.DB.PrepareContext(ctx, query)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 		return nil, 500, err
 	}
 
-	defer db.Close()
-	results, err := db.Query("SELECT * FROM users")
-
+	rows, err := stmt.QueryContext(ctx)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 		return nil, 500, err
 	}
 
 	users := []entities.User{}
-	for results.Next() {
+
+	for rows.Next() {
 		var user entities.User
 
-		err = results.Scan(&user.Id, &user.Name, &user.LastName, &user.Age)
+		err = rows.Scan(&user.Id, &user.Name, &user.LastName, &user.Age)
 		if err != nil {
 			fmt.Println("Err", err.Error())
 			return nil, 500, err
 		}
 
-		// append the product into products array
 		users = append(users, user)
 	}
 	if len(users) == 0 {
@@ -44,15 +57,20 @@ func GetUser(ctx context.Context) ([]entities.User, int, error) {
 	return users, 200, nil
 }
 
-func GetUserById(ctx context.Context, userId string) (*entities.User, int, error) {
-	db, err := sql.Open("mysql", "root"+":"+""+"@tcp(127.0.0.1:3306)/"+"apigin")
+func (m *mysqlRepo) GetUserById(ctx context.Context, userId string) (*entities.User, int, error) {
+	query := fmt.Sprintf("SELECT * FROM users WHERE ID = %s", userId)
+
+	stmt, err := m.DB.PrepareContext(ctx, query)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 		return nil, 500, err
 	}
 
-	defer db.Close()
-	results, err := db.Query("SELECT * FROM users WHERE ID = ?", userId)
+	rows, err := stmt.QueryContext(ctx)
+	if err != nil {
+		fmt.Println("Err", err.Error())
+		return nil, 500, err
+	}
 
 	if err != nil {
 		fmt.Println("Err", err.Error())
@@ -61,8 +79,8 @@ func GetUserById(ctx context.Context, userId string) (*entities.User, int, error
 
 	user := entities.User{}
 
-	if results.Next() {
-		err = results.Scan(&user.Id, &user.Name, &user.LastName, &user.Age)
+	if rows.Next() {
+		err = rows.Scan(&user.Id, &user.Name, &user.LastName, &user.Age)
 		if err != nil {
 			fmt.Println("Err", err.Error())
 			return nil, 500, err
@@ -74,65 +92,66 @@ func GetUserById(ctx context.Context, userId string) (*entities.User, int, error
 	return &user, 200, nil
 }
 
-func CreateUser(ctx context.Context, body entities.User) (int, error) {
-	db, err := sql.Open("mysql", "root"+":"+""+"@tcp(127.0.0.1:3306)/"+"apigin")
+func (m *mysqlRepo) CreateUser(ctx context.Context, body entities.User) (int, error) {
+
+	query := fmt.Sprintf("INSERT INTO users (name,last_name,age) VALUES ('%s','%s','%v')", body.Name, body.LastName, body.Age)
+	stmt, err := m.DB.PrepareContext(ctx, query)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 		return 500, err
 	}
 
-	defer db.Close()
-
-	insert, err := db.Query("INSERT INTO users (name,last_name,age) VALUES (?,?,?)", body.Name, body.LastName, body.Age)
-
+	rows, err := stmt.QueryContext(ctx)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 		return 500, err
 	}
 
-	defer insert.Close()
+	rows.Close()
 
 	return 200, nil
 }
 
-func DeleteUser(ctx context.Context, userId string) (int, error) {
-	db, err := sql.Open("mysql", "root"+":"+""+"@tcp(127.0.0.1:3306)/"+"apigin")
+func (m *mysqlRepo) DeleteUser(ctx context.Context, userId string) (int, error) {
+
+	query := fmt.Sprintf("DELETE from users WHERE id = %s", userId)
+
+	stmt, err := m.DB.PrepareContext(ctx, query)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 		return 500, err
 	}
 
-	defer db.Close()
-
-	delete, err := db.Query("DELETE from users WHERE id = ?", userId)
-
+	rows, err := stmt.QueryContext(ctx)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 		return 500, err
 	}
 
-	defer delete.Close()
+	rows.Close()
 
 	return 200, nil
 }
 
-func EditUser(ctx context.Context, body entities.User, userId string) (int, error) {
-	db, err := sql.Open("mysql", "root"+":"+""+"@tcp(127.0.0.1:3306)/"+"apigin")
+func (m *mysqlRepo) EditUser(ctx context.Context, body entities.User, userId string) (int, error) {
+
+	query := fmt.Sprintf("UPDATE users SET name = '%s', last_name = '%s', age = %v WHERE id = %s", body.Name, body.LastName, body.Age, userId)
+
+	fmt.Println(query, "QUERY")
+
+	stmt, err := m.DB.PrepareContext(ctx, query)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 		return 500, err
 	}
 
-	defer db.Close()
-
-	delete, err := db.Query("UPDATE users SET name = ?, last_name = ?, age = ? WHERE id = ?", body.Name, body.LastName, body.Age, userId)
-
+	rows, err := stmt.QueryContext(ctx)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 		return 500, err
 	}
 
-	defer delete.Close()
+	rows.Close()
 
 	return 200, nil
 }

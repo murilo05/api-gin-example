@@ -7,29 +7,32 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gitlab.engdb.com.br/apigin/domain/entities"
-	"gitlab.engdb.com.br/apigin/domain/usecase"
+	"gitlab.engdb.com.br/apigin/interfaces"
 	errorUtils "gitlab.engdb.com.br/apigin/utils/error"
 )
 
-func Routes(r *gin.Engine) *gin.Context {
-	r.GET("/getUsers", getUsers)
-	r.GET("/getUserById/:id", getUserById)
-	r.POST("/createUser", createUser)
-	r.DELETE("/deleteUser/:id", deleteUser)
-	r.PUT("/editUser/:id", editUser)
+type UserHandler struct {
+	userUseCase interfaces.UserUseCase
+}
+
+// NewArticleHandler will initialize the articles/ resources endpoint
+func NewProjectHandler(r *gin.Engine, us interfaces.UserUseCase) *gin.Context {
+	handler := &UserHandler{
+		userUseCase: us,
+	}
+	r.GET("/getUsers", handler.getUsers)
+	r.GET("/getUserById/:id", handler.getUserById)
+	r.POST("/createUser", handler.createUser)
+	r.DELETE("/:id", handler.deleteUser)
+	r.PUT("/:id", handler.editUser)
 
 	return nil
 }
 
-func getUsers(c *gin.Context) {
-	var token = c.GetHeader("token")
+func (uh *UserHandler) getUsers(c *gin.Context) {
+	ctx := context.Background()
 
-	gctx := context.Background()
-	gctx = context.WithValue(gctx, "token", token)
-	ctx, cancel := context.WithTimeout(gctx, 30000)
-	defer cancel()
-
-	resp, code, errorResp := usecase.GetUser(ctx)
+	resp, code, errorResp := uh.userUseCase.GetUser(ctx)
 	if errorResp != nil {
 		c.JSON(code, errorResp)
 		return
@@ -38,17 +41,12 @@ func getUsers(c *gin.Context) {
 	c.JSON(code, resp)
 }
 
-func getUserById(c *gin.Context) {
-	var token = c.GetHeader("token")
-
-	gctx := context.Background()
-	gctx = context.WithValue(gctx, "token", token)
-	ctx, cancel := context.WithTimeout(gctx, 30000)
-	defer cancel()
+func (uh *UserHandler) getUserById(c *gin.Context) {
+	ctx := context.Background()
 
 	inputId := c.Param("id")
 
-	resp, code, errorResp := usecase.GetUserById(ctx, inputId)
+	resp, code, errorResp := uh.userUseCase.GetUserById(ctx, inputId)
 	if errorResp != nil {
 		c.JSON(code, errorResp)
 		return
@@ -57,13 +55,8 @@ func getUserById(c *gin.Context) {
 	c.JSON(code, resp)
 }
 
-func createUser(c *gin.Context) {
-	var token = c.GetHeader("token")
-
-	gctx := context.Background()
-	gctx = context.WithValue(gctx, "token", token)
-	ctx, cancel := context.WithTimeout(gctx, 30000)
-	defer cancel()
+func (uh *UserHandler) createUser(c *gin.Context) {
+	ctx := context.Background()
 
 	jsonData, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
@@ -81,7 +74,7 @@ func createUser(c *gin.Context) {
 		return
 	}
 
-	code, errorResp := usecase.CreateUser(ctx, body)
+	code, errorResp := uh.userUseCase.CreateUser(ctx, body)
 	if errorResp != nil {
 		c.JSON(code, errorResp)
 		return
@@ -90,17 +83,12 @@ func createUser(c *gin.Context) {
 	c.String(200, "User Created")
 }
 
-func deleteUser(c *gin.Context) {
-	var token = c.GetHeader("token")
-
-	gctx := context.Background()
-	gctx = context.WithValue(gctx, "token", token)
-	ctx, cancel := context.WithTimeout(gctx, 30000)
-	defer cancel()
+func (uh *UserHandler) deleteUser(c *gin.Context) {
+	ctx := context.Background()
 
 	inputId := c.Param("id")
 
-	code, errorResp := usecase.DeleteUser(ctx, inputId)
+	code, errorResp := uh.userUseCase.DeleteUser(ctx, inputId)
 	if errorResp != nil {
 		c.JSON(code, errorResp)
 		return
@@ -109,13 +97,8 @@ func deleteUser(c *gin.Context) {
 	c.String(200, "User Deleted")
 }
 
-func editUser(c *gin.Context) {
-	var token = c.GetHeader("token")
-
-	gctx := context.Background()
-	gctx = context.WithValue(gctx, "token", token)
-	ctx, cancel := context.WithTimeout(gctx, 30000)
-	defer cancel()
+func (uh *UserHandler) editUser(c *gin.Context) {
+	ctx := context.Background()
 
 	jsonData, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
@@ -135,7 +118,7 @@ func editUser(c *gin.Context) {
 
 	inputId := c.Param("id")
 
-	code, errorResp := usecase.EditUser(ctx, body, inputId)
+	code, errorResp := uh.userUseCase.EditUser(ctx, body, inputId)
 	if errorResp != nil {
 		c.JSON(code, errorResp)
 		return

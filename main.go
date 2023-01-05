@@ -2,11 +2,40 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.engdb.com.br/apigin/infrastructure/handler"
+	"github.com/spf13/viper"
+	"gitlab.engdb.com.br/apigin/domain/entities"
+	"gitlab.engdb.com.br/apigin/infrastructure"
+	"gitlab.engdb.com.br/apigin/utils/env"
 )
 
 func main() {
 	r := gin.Default()
-	handler.Routes(r)
-	r.Run(":8083") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+
+	env.ReadEnvFile()
+
+	HOST := viper.GetString("HOST")
+	PORT := viper.GetString("PORT")
+	DBHOST := viper.GetString("DBHOST")
+	DBPORT := viper.GetString("DBPORT")
+	DBUSER := viper.GetString("DBUSER")
+	DBPASSAWORD := viper.GetString("DBPASSAWORD")
+	DBNAME := viper.GetString("DBNAME")
+	TIMEOUT := viper.GetInt("TIMEOUT")
+
+	env := entities.Env{
+		HOST:        HOST,
+		PORT:        PORT,
+		DBHOST:      DBHOST,
+		DBPORT:      DBPORT,
+		DBUSER:      DBUSER,
+		DBPASSAWORD: DBPASSAWORD,
+		DBNAME:      DBNAME,
+		TIMEOUT:     TIMEOUT,
+	}
+
+	//testar api, mudar tempo ctx, documentação, teste unitr
+
+	infrastructure.Config(env, r)
+
+	r.Run(HOST + ":" + PORT) // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

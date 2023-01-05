@@ -3,26 +3,26 @@ package usecase
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"gitlab.engdb.com.br/apigin/domain/entities"
-	"gitlab.engdb.com.br/apigin/infrastructure/repository"
+	"gitlab.engdb.com.br/apigin/interfaces"
 	errorUtils "gitlab.engdb.com.br/apigin/utils/error"
 )
 
-//GetUser - Returns all users from table users
-func GetUser(ctx context.Context) ([]entities.User, int, *entities.Error) {
+type userUsecase struct {
+	userRepo interfaces.UserRepo
+}
 
-	//Just a simulation to get values from Header, it's not necessary to have a specific token.
-	token := ctx.Value("token")
-	if token == "" {
-		err := errors.New("Bad Request")
-		fmt.Println("Token error")
-		errResp := errorUtils.CreateError(400, err.Error())
-		return nil, 400, &errResp
+func NewUserUsecase(us interfaces.UserRepo) interfaces.UserUseCase {
+	return &userUsecase{
+		userRepo: us,
 	}
+}
 
-	users, code, err := repository.GetUser(ctx)
+//GetUser - Returns all users from table users
+func (u *userUsecase) GetUser(ctx context.Context) ([]entities.User, int, *entities.Error) {
+
+	users, code, err := u.userRepo.GetUser(ctx)
 	if err != nil {
 		errResp := errorUtils.CreateError(code, err.Error())
 		return nil, code, &errResp
@@ -32,18 +32,9 @@ func GetUser(ctx context.Context) ([]entities.User, int, *entities.Error) {
 }
 
 //GetUserById - Returns an user by id
-func GetUserById(ctx context.Context, userId string) (*entities.User, int, *entities.Error) {
+func (u *userUsecase) GetUserById(ctx context.Context, userId string) (*entities.User, int, *entities.Error) {
 
-	//Just a simulation to get values from Header, it's not necessary to have a specific token.
-	token := ctx.Value("token")
-	if token == "" {
-		err := errors.New("Bad Request")
-		fmt.Println("Token error")
-		errResp := errorUtils.CreateError(400, err.Error())
-		return nil, 400, &errResp
-	}
-
-	user, code, err := repository.GetUserById(ctx, userId)
+	user, code, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		errResp := errorUtils.CreateError(code, err.Error())
 		return nil, code, &errResp
@@ -58,18 +49,9 @@ func GetUserById(ctx context.Context, userId string) (*entities.User, int, *enti
 	}
 }
 
-func CreateUser(ctx context.Context, body entities.User) (int, *entities.Error) {
+func (u *userUsecase) CreateUser(ctx context.Context, body entities.User) (int, *entities.Error) {
 
-	//Just a simulation to get values from Header, it's not necessary to have a specific token.
-	token := ctx.Value("token")
-	if token == "" {
-		err := errors.New("Bad Request")
-		fmt.Println("Token error")
-		errResp := errorUtils.CreateError(400, err.Error())
-		return 400, &errResp
-	}
-
-	code, err := repository.CreateUser(ctx, body)
+	code, err := u.userRepo.CreateUser(ctx, body)
 	if err != nil {
 		errResp := errorUtils.CreateError(code, err.Error())
 		return code, &errResp
@@ -78,26 +60,17 @@ func CreateUser(ctx context.Context, body entities.User) (int, *entities.Error) 
 	return 200, nil
 }
 
-func DeleteUser(ctx context.Context, userId string) (int, *entities.Error) {
-
-	//Just a simulation to get values from Header, it's not necessary to have a specific token.
-	token := ctx.Value("token")
-	if token == "" {
-		err := errors.New("Bad Request")
-		fmt.Println("Token error")
-		errResp := errorUtils.CreateError(400, err.Error())
-		return 400, &errResp
-	}
+func (u *userUsecase) DeleteUser(ctx context.Context, userId string) (int, *entities.Error) {
 
 	//Checking if user exists
-	user, code, err := repository.GetUserById(ctx, userId)
+	user, code, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		errResp := errorUtils.CreateError(code, err.Error())
 		return code, &errResp
 	}
 
 	if user != nil {
-		code, err := repository.DeleteUser(ctx, userId)
+		code, err := u.userRepo.DeleteUser(ctx, userId)
 		if err != nil {
 			errResp := errorUtils.CreateError(code, err.Error())
 			return code, &errResp
@@ -113,26 +86,17 @@ func DeleteUser(ctx context.Context, userId string) (int, *entities.Error) {
 	}
 }
 
-func EditUser(ctx context.Context, body entities.User, userId string) (int, *entities.Error) {
-
-	//Just a simulation to get values from Header, it's not necessary to have a specific token.
-	token := ctx.Value("token")
-	if token == "" {
-		err := errors.New("Bad Request")
-		fmt.Println("Token error")
-		errResp := errorUtils.CreateError(400, err.Error())
-		return 400, &errResp
-	}
+func (u *userUsecase) EditUser(ctx context.Context, body entities.User, userId string) (int, *entities.Error) {
 
 	//Checking if user exists
-	user, code, err := repository.GetUserById(ctx, userId)
+	user, code, err := u.userRepo.GetUserById(ctx, userId)
 	if err != nil {
 		errResp := errorUtils.CreateError(code, err.Error())
 		return code, &errResp
 	}
 
 	if user != nil {
-		code, err := repository.EditUser(ctx, body, userId)
+		code, err := u.userRepo.EditUser(ctx, body, userId)
 		if err != nil {
 			errResp := errorUtils.CreateError(code, err.Error())
 			return code, &errResp
